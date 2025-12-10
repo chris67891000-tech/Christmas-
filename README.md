@@ -1,51 +1,79 @@
-# 檔名: main.py
-
-# 匯入我們需要的函式庫
-import google.generativeai as genai
 import os
+import requests
+import json
+from dotenv import load_dotenv
 
-# --- 設定你的 API 金鑰 ---
-# 最佳實踐是使用環境變數，但為了讓你快速上手，我們先直接寫在這裡。
-# ⚠️ 注意：請務必將 "YOUR_API_KEY" 替換成你自己的金鑰！
-# 取得金鑰的教學請見下方的「實施步驟」。
-API_KEY = "YOUR_API_KEY" 
+# 載入 .env 文件中的環境變數
+load_dotenv()
 
-# 使用你的 API 金鑰來設定 Gemini
-try:
-    genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel('gemini-pro')
-    print("✅ Gemini API 連接成功！")
-except Exception as e:
-    print(f"❌ 連接失敗：請檢查你的 API 金鑰是否正確。錯誤訊息：{e}")
-    exit() # 如果連接失敗，就結束程式
+def google_search(query: str, num_results: int = 5) -> list:
+    """
+    使用 Google Custom Search JSON API 執行網路搜尋。
 
-# --- 主要程式邏輯 ---
-print("\n你好！我是你的 AI 研究助理。")
-print("請輸入你的問題，我會試著回答。輸入 'exit' 來結束對話。")
+    Args:
+        query (str): 搜尋的關鍵字。
+        num_results (int): 希望返回的結果數量 (最多10個)。
 
-# 建立一個無限迴圈，讓你可以一直問問題
-while True:
-    # 提示使用者輸入問題
-    user_question = input("\n🤔 請輸入你的問題：")
+    Returns:
+        list: 包含搜尋結果的列表，每個結果都是一個包含 title, link, snippet 的字典。
+    """
+    api_key = os.getenv("GOOGLE_API_KEY")
+    search_engine_id = os.getenv("SEARCH_ENGINE_ID")
 
-    # 如果使用者輸入 'exit'，就跳出迴圈結束程式
-    if user_question.lower() == 'exit':
-        print("👋 感謝使用，下次見！")
-        break
+    if not api_key or not search_engine_id:
+        raise ValueError("請確認 .env 文件中已設定 GOOGLE_API_KEY 和 SEARCH_ENGINE_ID")
 
-    # 檢查使用者是否真的有輸入問題
-    if not user_question:
-        print("請不要空白，輸入一個問題。")
-        continue
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {
+        'key': api_key,
+        'cx': search_engine_id,
+        'q': query,
+        'num': num_results
+    }
 
-    # --- 將問題發送給 Gemini 並取得回覆 ---
-    print("\n🧠 正在思考中，請稍候...")
+    print(f"⚡ 正在搜尋: '{query}'...")
+
     try:
-        # 將問題發送給模型
-        response = model.generate_content(user_question)
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # 如果請求失敗 (例如 4xx 或 5xx)，則拋出異常
+        
+        search_results = response.json()
+        
+        # 提取我們需要的資訊：標題、連結和摘要
+        formatted_results = []
+        items = search_results.get('items', [])
+        
+        if not items:
+            print("⚠️ 找不到相關的搜尋結果。")
+            return []
 
-        # 印出 Gemini 的回覆
-        print("\n💡 AI 的回答：")
-        print(response.text)
+        for item in items:
+            formatted_results.append({
+                "title": item.get("title"),
+                "link": item.get("link"),
+                "snippet": item.get("snippet")
+            })
+        
+        return formatted_results
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ API 請求失敗: {e}")
+        return []
     except Exception as e:
-        print(f"❌ 產生回覆時發生錯誤：{e}")
+        print(f"❌ 處理搜尋結果時發生錯誤: {e}")
+        return []
+
+# --- 主執行區塊 ---
+if __name__ == "__main__":
+    test_query = "什麼是大型語言模型 (LLM)？"
+    results = google_search(test_query)
+
+    if results:
+        print("\n✅ 搜尋結果如下：")
+        print("==============================================")
+        for i, result in enumerate(results, 1):
+            print(f"結果 {i}:")
+            print(f"  標題: {result['title']}")
+            print(f"  連結: {result['link']}")
+            print(f"  摘要: {result['snippet']}\n")
+        print("==============================================")
