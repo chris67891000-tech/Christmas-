@@ -1,92 +1,51 @@
-import requests
-import json
-import time
+# 檔名: main.py
+
+# 匯入我們需要的函式庫
+import google.generativeai as genai
 import os
 
-# --- 設定區 ---
-# 將設定值放在腳本頂部，方便修改
-API_URL = "https://uselessfacts.jsph.pl/random.json?language=en"
-STORAGE_FILE = "facts.json"
-FETCH_INTERVAL_SECONDS = 60 # 每 60 秒抓取一次
+# --- 設定你的 API 金鑰 ---
+# 最佳實踐是使用環境變數，但為了讓你快速上手，我們先直接寫在這裡。
+# ⚠️ 注意：請務必將 "YOUR_API_KEY" 替換成你自己的金鑰！
+# 取得金鑰的教學請見下方的「實施步驟」。
+API_KEY = "I want to improve my programming abilities" 
 
-# --- 核心功能函式 ---
+# 使用你的 API 金鑰來設定 Gemini
+try:
+    genai.configure(api_key=API_KEY)
+    model = genai.GenerativeModel('gemini-pro')
+    print("✅ Gemini API 連接成功！")
+except Exception as e:
+    print(f"❌ 連接失敗：請檢查你的 API 金鑰是否正確。錯誤訊息：{e}")
+    exit() # 如果連接失敗，就結束程式
 
-def load_facts(filename):
-    """從 JSON 檔案載入已有的事實列表。如果檔案不存在，回傳一個空列表。"""
-    if not os.path.exists(filename):
-        return []
+# --- 主要程式邏輯 ---
+print("\n你好！我是你的 AI 研究助理。")
+print("請輸入你的問題，我會試著回答。輸入 'exit' 來結束對話。")
+
+# 建立一個無限迴圈，讓你可以一直問問題
+while True:
+    # 提示使用者輸入問題
+    user_question = input("\n🤔 請輸入你的問題：")
+
+    # 如果使用者輸入 'exit'，就跳出迴圈結束程式
+    if user_question.lower() == 'exit':
+        print("👋 感謝使用，下次見！")
+        break
+
+    # 檢查使用者是否真的有輸入問題
+    if not user_question:
+        print("請不要空白，輸入一個問題。")
+        continue
+
+    # --- 將問題發送給 Gemini 並取得回覆 ---
+    print("\n🧠 正在思考中，請稍候...")
     try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            # 確保檔案內容是有效的 JSON 格式
-            content = f.read()
-            if not content:
-                return []
-            return json.loads(content)
-    except (json.JSONDecodeError, IOError) as e:
-        print(f"⚡ 讀取檔案時發生錯誤: {e}。將從空列表開始。")
-        return []
+        # 將問題發送給模型
+        response = model.generate_content(user_question)
 
-def save_facts(filename, facts_list):
-    """將事實列表儲存到 JSON 檔案。"""
-    try:
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(facts_list, f, indent=4, ensure_ascii=False)
-    except IOError as e:
-        print(f"⚡ 儲存檔案時發生錯誤: {e}")
-
-def fetch_new_fact(api_url):
-    """從 API 獲取一個新的事實。"""
-    try:
-        response = requests.get(api_url)
-        response.raise_for_status()  # 如果請求失敗 (如 404, 500)，會拋出異常
-        fact_data = response.json()
-        return fact_data['text'] # 我們只關心事實的文字內容
-    except requests.RequestException as e:
-        print(f"⚡ API 請求失敗: {e}")
-        return None
-
-def is_fact_unique(fact, existing_facts):
-    """檢查事實是否已經存在於列表中。"""
-    # 為了比對，我們將所有文字轉換為小寫並移除前後空白
-    normalized_fact = fact.strip().lower()
-    for item in existing_facts:
-        if item.strip().lower() == normalized_fact:
-            return False
-    return True
-
-# --- 主執行邏輯 ---
-
-def main():
-    """自動化知識收集器的主函式。"""
-    print("🚀 自動化知識收集器已啟動！ 按下 Ctrl+C 來停止。")
-    
-    # 1. 啟動時載入現有資料
-    facts_collection = load_facts(STORAGE_FILE)
-    print(f"✅ 目前已收集 {len(facts_collection)} 筆獨特事實。")
-
-    # 2. 進入無限迴圈，實現自動化
-    while True:
-        print(f"\n--- {time.strftime('%Y-%m-%d %H:%M:%S')} ---")
-        
-        # 3. 抓取新資料
-        print("🔍 正在從 API 抓取新事實...")
-        new_fact = fetch_new_fact(API_URL)
-
-        if new_fact:
-            # 4. 檢查是否重複
-            if is_fact_unique(new_fact, facts_collection):
-                # 5a. 如果是新的，加入並儲存
-                print("✨ 發現新事實！正在加入收藏...")
-                facts_collection.append(new_fact)
-                save_facts(STORAGE_FILE, facts_collection)
-                print(f"✅ 成功儲存！目前總數: {len(facts_collection)}")
-            else:
-                # 5b. 如果已存在，則捨棄
-                print("💡 這筆事實已存在，自動跳過。")
-        
-        # 6. 等待指定時間
-        print(f"⏳ 進入休眠，將在 {FETCH_INTERVAL_SECONDS} 秒後再次抓取...")
-        time.sleep(FETCH_INTERVAL_SECONDS)
-
-if __name__ == "__main__":
-    main()
+        # 印出 Gemini 的回覆
+        print("\n💡 AI 的回答：")
+        print(response.text)
+    except Exception as e:
+        print(f"❌ 產生回覆時發生錯誤：{e}")
