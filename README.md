@@ -8,11 +8,11 @@ import os
 # 最佳實踐是使用環境變數，但為了讓你快速上手，我們先直接寫在這裡。
 # ⚠️ 注意：請務必將 "YOUR_API_KEY" 替換成你自己的金鑰！
 # 取得金鑰的教學請見下方的「實施步驟」。
-API_KEY ="I want to improve my programming abilities" 
+API_KEY = "YOUR_API_KEY" 
 
 # 使用你的 API 金鑰來設定 Gemini
 try:
-    genai.configure(API_KEY="I want to improve my programming abilities")
+    genai.configure(api_key=API_KEY)
     model = genai.GenerativeModel('gemini-pro')
     print("✅ Gemini API 連接成功！")
 except Exception as e:
