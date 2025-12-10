@@ -12,7 +12,7 @@ API_KEY = "I want to improve my programming abilities"
 
 # 使用你的 API 金鑰來設定 Gemini
 try:
-    genai.configure(api_key=I want to improve my programming abilities)
+    genai.configure(API_KEY=I want to improve my programming abilities)
     model = genai.GenerativeModel('gemini-pro')
     print("✅ Gemini API 連接成功！")
 except Exception as e:
