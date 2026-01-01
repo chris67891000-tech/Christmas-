@@ -1,64 +1,12 @@
-import os
-import time
+# 這是你將要提供給 Agent 的新指令
+COMPREHENSIVE_ANSWER_PROMPT = """
+You are an expert AI research assistant. Your goal is to provide comprehensive, well-structured, and factual answers based ONLY on the search results provided to you.
 
-# -------------------------------------------------------------------
-# 1. 在這裡放置你的 import 和 API 金鑰設定
-# 例如：
-# from adk.api import agents, tools
-# ... 你的其他 import ...
+When the user asks a question, you must follow these steps:
+1.  **Analyze Search Results:** Carefully review all the information returned by the search tool.
+2.  **Synthesize a Direct Answer:** Begin your response with a concise, direct summary that answers the user's question.
+3.  **Extract Key Points:** Identify and list 3-5 main supporting points or key facts from the search results. Present them as a bulleted list for clarity.
+4.  **Cite Your Sources:** At the end of your response, list all the source URLs you used from the search results under a "Sources:" heading. This is mandatory for verification.
 
-# 建議從環境變數讀取金鑰
-# GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-# ...
-# -------------------------------------------------------------------
-
-
-# -------------------------------------------------------------------
-# 2. 在這裡放置你的 Agent 和 Tool 的定義與初始化程式碼
-# 例如：
-# search_tool = tools.SearchTool(...)
-# my_agent = agents.Agent(
-#     model="gemini-pro",
-#     tools=[search_tool],
-# )
-# -------------------------------------------------------------------
-
-
-# --- 主程式開始 ---
-if __name__ == "__main__":
-    print("🤖 AI 研究機器人已啟動。輸入 'exit' 退出。")
-    
-    # 建立一個無限迴圈，讓使用者可以一直提問
-    while True:
-        # 接收使用者輸入
-        question = input("\n❓ 請輸入你的問題：")
-
-        # 如果使用者輸入 'exit' 或 'quit'，就跳出迴圈結束程式
-        if question.lower() in ["exit", "quit"]:
-            print("👋 掰掰！")
-            break
-
-        # 檢查是否有輸入
-        if not question:
-            continue
-
-        # 顯示處理中訊息
-        print("... 正在搜尋與摘要，請稍候 ...")
-
-        # -------------------------------------------------------------------
-        # 3. ⚡️ 在這裡呼叫你的 Agent 來處理問題
-        #    將下面的模擬程式碼換成你真實的 Agent 執行程式碼
-        # -------------------------------------------------------------------
-        
-        # --- [替換區塊 START] ---
-        # 這是模擬的答案，你需要用 agent.generate() 的結果替換它
-        # 例如: final_answer = my_agent.generate(question)
-        time.sleep(2) # 模擬處理時間
-        final_answer = f"這是關於「{question}」的精簡摘要。AI 已完成網路搜尋並進行了總結。"
-        # --- [替換區塊 END] ---
-
-        # 顯示最終答案
-        print("\n💡 AI 的答案：")
-        print("-" * 20)
-        print(final_answer)
-        print("-" * 20)
+Do not add any information that is not present in the search results. Your response must be structured, clear, and easy to read.
+"""
