@@ -1,114 +1,90 @@
-# main_bot.py
-
 import os
-import adk
-from adk.models import GeminiPro
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+import time
 
-# --- 1. CONFIGURATION: Set up your API keys and IDs ---
-# IMPORTANT: Replace these placeholder values with your actual keys and ID.
-# Best practice is to use environment variables to keep your keys secure.
-# To set an environment variable in your terminal:
-# export GOOGLE_API_KEY="YOUR_GEMINI_API_KEY"
-# export GOOGLE_CSE_ID="YOUR_CUSTOM_SEARCH_ENGINE_ID"
-# export GOOGLE_SEARCH_API_KEY="YOUR_CUSTOM_SEARCH_API_KEY"
-
-# Your Gemini API Key
-os.environ["GOOGLE_API_KEY"] = "PASTE_YOUR_GEMINI_API_KEY_HERE"
-
-# Your Custom Search Engine ID (CX)
-GOOGLE_CSE_ID = "PASTE_YOUR_CUSTOM_SEARCH_ENGINE_ID_HERE"
-
-# Your Custom Search API Key (This is different from your Gemini key)
-GOOGLE_SEARCH_API_KEY = "PASTE_YOUR_CUSTOM_SEARCH_API_KEY_HERE"
+# -------------------------------------------------------------------
+# [在這裡放置你所有的 import 和 API 金鑰設定]
+# 例如：
+# from google.cloud import aiplatform
+# from google.generativeai.client import get_default_client_async
+# from adk.api import agents
+# from adk.api import tools
+#
+# # 建議使用環境變數來管理你的 API 金鑰，而不是直接寫在程式碼裡
+# GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+# GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+# GOOGLE_CSE_ID = os.environ.get("GOOGLE_CSE_ID")
+#
+# # [在這裡放置你定義 SearchTool 和 Agent 的程式碼]
+# # ... 你的 SearchTool 類別/函式 ...
+# # ... 你的 Agent 初始化程式碼 ...
+# -------------------------------------------------------------------
 
 
-# --- 2. DEFINE THE TOOL: Create the web search function ---
-@adk.tool
-def web_search(query: str) -> str:
+def run_agent_interaction(question: str) -> str:
     """
-    Use this tool ONLY when you need to find information about current events,
-    specific facts about people, places, or topics, or any information after 2023.
-    This is your primary tool for answering questions that require up-to-date information.
-    Do NOT use for simple greetings, math, or creative tasks.
+    這個函式封裝了與 AI Agent 互動的所有邏輯。
+    它接收一個問題，並返回 AI 生成的答案。
     """
-    print(f"🧠 Agent decided to use a tool -> ⚡ Executing web search for: '{query}'")
-    try:
-        # Build the service object for the Custom Search API
-        service = build("customsearch", "v1", developerKey=GOOGLE_SEARCH_API_KEY)
-        
-        # Execute the search request
-        res = service.cse().list(
-            q=query,
-            cx=GOOGLE_CSE_ID,
-            num=3  # Get the top 3 results for better context
-        ).execute()
+    # ⚡️ 在這裡整合你現有的 AI Agent 邏輯
+    # -------------------------------------------------------------------
+    # [START] 將你現有的 Agent 執行邏輯放在這裡
+    # -------------------------------------------------------------------
+    print("🧠 AI 正在思考中，請稍候...")
+    
+    # 這是模擬的 AI 處理過程，你需要替換成你真實的程式碼
+    # 例如： result = agent.generate(question)
+    time.sleep(3) # 模擬網路請求和 AI 處理的時間
+    mock_answer = f"這是針對「{question}」的摘要回答。\n\n" \
+                  "1.  **重點一**：AI 透過 Tool Use 呼叫了 Google Custom Search API。\n" \
+                  "2.  **重點二**：它從搜尋結果中提取了最相關的資訊。\n" \
+                  "3.  **重點三**：最後，Gemini 模型將資訊匯總成這個簡潔的摘要。\n"
 
-        # Process the search results
-        items = res.get('items', [])
-        if not items:
-            return "No relevant information found on the web for this query."
-
-        # Extract snippets and titles to form a concise summary
-        snippets = []
-        for i, item in enumerate(items):
-            title = item.get('title', 'No Title')
-            snippet = item.get('snippet', 'No Snippet').replace('\n', ' ')
-            snippets.append(f"Source {i+1}: {title}\nSnippet: {snippet}")
-
-        # Combine snippets into a single string for the LLM to process
-        search_summary = "\n\n".join(snippets)
-        print(f"📄 Found information:\n{search_summary[:400]}...") # Print a preview
-        return search_summary
-
-    except HttpError as e:
-        error_message = f"An error occurred during the web search: {e}"
-        print(f"⚠️ {error_message}")
-        return error_message
-    except Exception as e:
-        error_message = f"A general error occurred: {e}"
-        print(f"⚠️ {error_message}")
-        return error_message
+    # return result
+    return mock_answer
+    # -------------------------------------------------------------------
+    # [END] Agent 執行邏輯結束
+    # -------------------------------------------------------------------
 
 
-# --- 3. ORCHESTRATE THE AGENT: Initialize and run the bot ---
-def run_research_bot():
+def main():
     """
-    Initializes the ADK agent and starts the conversation loop.
+    主程式，負責處理使用者介面和互動流程。
     """
-    print("🤖 AI Web Explorer is online. Ask me anything!")
-    print(" (Type 'exit' to end the session)")
+    # 歡迎訊息
+    print("=" * 50)
+    print("🤖 歡迎使用 AI Web Explorer 智能研究機器人 🤖")
+    print("=" * 50)
+    print("你好！我是你的 AI 研究夥伴。")
+    print("你可以問我任何問題，我會上網搜尋並為你摘要答案。")
+    print("輸入 'exit' 或 'quit' 即可離開程式。")
+    print("-" * 50)
 
-    # Instantiate the agent with the Gemini model and our web_search tool
-    try:
-        my_research_agent = adk.Agent(
-            model=GeminiPro(),
-            tools=[web_search]
-        )
-    except Exception as e:
-        print(f"❌ Failed to initialize agent. Is your GOOGLE_API_KEY for Gemini correct? Error: {e}")
-        return
-
-    # Main loop to keep asking questions
+    # 互動迴圈
     while True:
-        user_question = input("\n> You: ")
-        if user_question.lower() == 'exit':
-            print("👋 Goodbye!")
+        # 獲取使用者輸入
+        user_question = input("❓ 你想問什麼？\n> ")
+
+        # 檢查是否要退出
+        if user_question.lower() in ['exit', 'quit']:
+            print("\n👋 感謝使用，再見！")
             break
+
+        # 檢查輸入是否為空
+        if not user_question.strip():
+            print("❗ 請輸入一個問題。")
+            continue
+
+        print("-" * 50)
         
-        print("🤔 Agent is thinking...")
-        
-        # The core of the project: run the agent and let it decide what to do
-        final_answer = my_research_agent.run(user_question)
-        
-        print(f"\n✅ AI Assistant:\n{final_answer}")
+        # 執行 AI Agent 互動並獲取答案
+        final_answer = run_agent_interaction(user_question)
+
+        # 格式化並呈現答案
+        print("\n💡 AI 摘要的答案：")
+        print("-" * 20)
+        print(final_answer)
+        print("-" * 50)
 
 
-# --- 4. EXECUTION ---
 if __name__ == "__main__":
-    # Check if all keys are set before running
-    if not all([os.getenv("GOOGLE_API_KEY"), GOOGLE_CSE_ID, GOOGLE_SEARCH_API_KEY]):
-        print("❌ ERROR: Missing one or more API keys or CSE ID. Please fill them in at the top of the script.")
-    else:
-        run_research_bot()
+    main()
